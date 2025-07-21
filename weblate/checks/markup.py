@@ -98,6 +98,7 @@ RST_ROLE_RE = [
     re.compile(r"""Interpreted text role "([^"]*)" not implemented\."""),
 ]
 
+RST_INLINE_LITERAL_BAD_SPACING = re.compile(r"(?<!\W)``[^`]+?``(?!\W)")
 
 def strip_entities(text):
     """Strip all HTML entities (we don't care about them)."""
@@ -397,7 +398,17 @@ class RSTBaseCheck(TargetCheck):
         super().__init__()
         self.enable_string = "rst-text"
 
+class RSTInlineLiteralSpacingCheck(RSTBaseCheck):
+    check_id = "rst-inline-spacing"
+    name = gettext_lazy("Inline literal spacing")
+    description = gettext_lazy("Inline literals are not surrounded by spacing or punctuation.")
 
+    def check_single(self, source: str, target: str, unit: Unit) -> bool | MissingExtraDict:
+        if RST_INLINE_LITERAL_BAD_SPACING.search(target):
+            matches = [m.group(0) for m in RST_INLINE_LITERAL_BAD_SPACING.finditer(target)]
+            return {"errors": [f"Bad inline literal usage: {m}" for m in matches]}
+        return False
+        
 class RSTReferencesCheck(RSTBaseCheck):
     check_id = "rst-references"
     name = gettext_lazy("Inconsistent reStructuredText references")
